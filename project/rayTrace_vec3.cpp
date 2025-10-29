@@ -1,5 +1,5 @@
 
-//To Compile: g++ -fsanitize=address -std=c++11 rayTrace_vec3.cpp
+//To Compile: g++ -fsanitize=address -std=c++14 rayTrace_vec3.cpp -o ray
 // v2 for csci 5607 project 3b
 // tracy and mary 
 
@@ -77,8 +77,8 @@ float whereRaySphereIntersect(vec3 start, vec3 dir, vec3 center, float radius){
 bool FindIntersection(vec3 start, vec3 dir, HitInformation& hitInfo) {
   float closest_dist = -1;
   for (int s = 0; s < sphere_count; s++) {
-    vec3 spherePos = vec3(sphere_x[s], sphere_y[s], sphere_z[s]);
-    float radius = sphere_r[s];
+    vec3 spherePos = spheres[s].spherePos;
+    float radius = spheres[s].sphereRadius;
     float dist = whereRaySphereIntersect(start, dir, spherePos, radius);
     if (dist > 0 && (closest_dist < 0 || dist < closest_dist)) {
       closest_dist = dist;
@@ -123,14 +123,13 @@ bool refract(vec3 d, vec3 n, float r, vec3& t) {
 
 Color ApplyLightingModel(vec3 start, vec3 dir, HitInformation& hitInfo, int depth) {
   vec3 contribution = vec3(0, 0, 0);
-  int mat_index = sphere_material_index[hitInfo.sphere_num];
-
-  // getting diffuse, specular, and ambient coefficients from the arrays we parsed
-  vec3 kd = vec3(diffuse_r[mat_index], diffuse_g[mat_index], diffuse_b[mat_index]);
-  vec3 ks = vec3(specular_r[mat_index], specular_g[mat_index], specular_b[mat_index]);
-  vec3 ka = vec3(ambient_r[mat_index], ambient_g[mat_index], ambient_b[mat_index]);
-  vec3 kt = vec3(trans_r[mat_index], trans_g[mat_index], trans_b[mat_index]);
-  float ns = phong_cos[mat_index]; // phong exponent
+  int mat_index = spheres[hitInfo.sphere_num].sphere_material_index;
+  // getting diffuse, specular, ambient, and transmissive coefficients from parser
+  vec3 kd = materials[mat_index].diffuse;
+  vec3 ks = materials[mat_index].specular;
+  vec3 ka = materials[mat_index].ambient;
+  vec3 kt = materials[mat_index].transmissive;
+  float ns = materials[mat_index].phong_cos;
 
   // adding the contribution from the ambient lighting once , no need to loop through the lights to get it 
   contribution = contribution + (ka * ambient_light);
@@ -174,8 +173,8 @@ Color ApplyLightingModel(vec3 start, vec3 dir, HitInformation& hitInfo, int dept
   }
   //more light logic after
   //Following the pseudocode from lecture slides 13
-  if (depth < max_depth) {
-      float mat_ior = ior[mat_index];
+  if (depth <= max_depth) {
+      float mat_ior = materials[mat_index].ior;
       bool entering = dot(dir, hitInfo.normal) < 0.0f; // determine if ray is entering or exiting the object
       
       // set surface normal to point in correct direction for refractio
@@ -202,24 +201,22 @@ Color ApplyLightingModel(vec3 start, vec3 dir, HitInformation& hitInfo, int dept
       if (canRefract) {
           vec3 t_dir = t.normalized();
           vec3 refract_start = hitInfo.point + t_dir * 0.001f;
-          //vec3 refract_start = hitInfo.point + t_dir;
           Color refract_color = evaluateRayTree(refract_start, t.normalized(), depth + 1);
           k = vec3(refract_color.r, refract_color.g, refract_color.b) * kt;
           // beer-lambert attenuation when exiting
-          /*if (!entering) {
-            float distance = hitInfo.dist;
-            k.x *= exp(-kt.x * distance);
-            k.y *= exp(-kt.y * distance);
-            k.z *= exp(-kt.z * distance);
-          }*/
+          // if (!entering) {
+          //   float distance = hitInfo.dist;
+          //   k.x *= exp(-kt.x * distance);
+          //   k.y *= exp(-kt.y * distance);
+          //   k.z *= exp(-kt.z * distance);
+          // }
       }
       
-      //vec3 k = vec3(0, 0, 0);
       // fresnel effect
-      //float R0 = powf((n1 - n2) / (n1 + n2), 2.0f); //Schlick approximation
-      //float c = entering ? std::fabs(dot(dir * -1, nRefract)) : std::fabs(dot(t.normalized(), nRefract));
-      //float R = canRefract ? (R0 + (1.0f - R0) * powf(1.0f - c, 5.0f)) : 1.0f;
-      //contribution = contribution + (R * reflect_contrib + (1.0f - R) * (k));
+      // float R0 = powf((n1 - n2) / (n1 + n2), 2.0f); //Schlick approximation
+      // float c = entering ? std::fabs(dot(dir * -1, nRefract)) : std::fabs(dot(t.normalized(), nRefract));
+      // float R = canRefract ? (R0 + (1.0f - R0) * powf(1.0f - c, 5.0f)) : 1.0f;
+      // contribution = contribution + (R * reflect_contrib + (1.0f - R) * (k));
       contribution = contribution + (reflect_contrib + (1.0f) * (k));
     }
   contribution.clampTo1(); // clamp so none of the exponents exceed 1

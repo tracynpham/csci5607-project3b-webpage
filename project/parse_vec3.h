@@ -25,43 +25,31 @@ vec3 up = vec3(0,1,0).normalized();
 vec3 right;
 float halfAngleVFOV = 35; 
 
-//Scene (Sphere) Parameters
-vec3 spherePos = vec3(0,0,2);
-float sphereRadius = 1; 
-
-//store multiple spheres from a file
-int sphere_material_index[MAX_INPUT];
-float sphere_x[MAX_INPUT], sphere_y[MAX_INPUT], sphere_z[MAX_INPUT];
-float sphere_r[MAX_INPUT];
+//Sphere Parameters
+struct Sphere {
+  vec3 spherePos = vec3(0,0,2);
+  float sphereRadius = 1;
+  float sphere_material_index = 0;
+};
+Sphere spheres[MAX_INPUT];
 int sphere_count = 0;
 
 //Background Parameters
 vec3 background = vec3(0,0,0);
 
-//Material Paramters
-
-//material defaults
-vec3 ambient = vec3(0,0,0);
-vec3 diffuse = vec3(1,1,1);
-vec3 specular = vec3(0,0,0);
-float curr_phong_cos = 5; //ns
-vec3 transmissive = vec3(0,0,0);
-float curr_ior = 1; //index of reflection
-
-//store multiple materials from a file
-float ambient_r[MAX_INPUT], ambient_g[MAX_INPUT], ambient_b[MAX_INPUT];
-float diffuse_r[MAX_INPUT], diffuse_g[MAX_INPUT], diffuse_b[MAX_INPUT];
-float specular_r[MAX_INPUT], specular_g[MAX_INPUT], specular_b[MAX_INPUT];
-float phong_cos[MAX_INPUT];
-float trans_r[MAX_INPUT], trans_g[MAX_INPUT], trans_b[MAX_INPUT];
-float ior[MAX_INPUT];
+//Material Parameters
+struct Material {
+  vec3 ambient = vec3(0,0,0);
+  vec3 diffuse = vec3(1,1,1);
+  vec3 specular = vec3(0,0,0);
+  float phong_cos = 5;
+  vec3 transmissive = vec3(0,0,0);
+  float ior = 1;
+};
+Material materials[MAX_INPUT];
 int mat_count = 0;
 
-
 //Light Parameters
-vec3 ambient_light = vec3(0,0,0);
-int max_depth = 5;
-
 float point_light_r[MAX_INPUT], point_light_g[MAX_INPUT], point_light_b[MAX_INPUT];
 float point_light_x[MAX_INPUT], point_light_y[MAX_INPUT], point_light_z[MAX_INPUT];
 int num_lights = 0;
@@ -69,6 +57,19 @@ int num_lights = 0;
 float dir_light_r[MAX_INPUT], dir_light_g[MAX_INPUT], dir_light_b[MAX_INPUT];
 float dir_light_x[MAX_INPUT], dir_light_y[MAX_INPUT], dir_light_z[MAX_INPUT];
 int num_dir_lights = 0;
+
+vec3 ambient_light = vec3(0,0,0);
+int max_depth = 5;
+
+//store triangles
+struct Triangle {
+  vec3 v1;
+  vec3 v2;
+  vec3 v3;
+  int tri_material_index;
+};
+Triangle triangles[MAX_INPUT];
+int tri_count = 0;
 
 void parseSceneFile(std::string fileName){
   //TODO: Override the default values with new data from the file "fileName"
@@ -85,11 +86,9 @@ void parseSceneFile(std::string fileName){
     if (strncmp(line, "sphere:", 7) == 0) {
       float x, y, z, r;
       if (sscanf(line + 7, "%f %f %f %f", &x, &y, &z, &r) == 4) {
-        sphere_x[sphere_count] = x;
-        sphere_y[sphere_count] = y;
-        sphere_z[sphere_count] = z;
-        sphere_r[sphere_count] = r;
-        sphere_material_index[sphere_count] = (mat_count > 0) ? (mat_count - 1) : 0; //avoid invalid indexing
+        spheres[sphere_count].spherePos = vec3(x, y,z);
+        spheres[sphere_count].sphereRadius = r;
+        spheres[sphere_count].sphere_material_index = (mat_count > 0) ? (mat_count - 1) : 0; //avoid invalid indexing
         sphere_count++;
         printf("Sphere: (%f, %f, %f), r = %f\n", x, y, z, r);
       } else {
@@ -173,27 +172,14 @@ void parseSceneFile(std::string fileName){
         &ar, &ag, &ab, &dr, &dg, &db, &sr, &sg, &sb, &ns, &tr, &tg, &tb, &new_ior) == 14) {
       
         //storing each value into an array to deal with multiple materials in a .txt file
-        ambient_r[mat_count] = ar;
-        ambient_g[mat_count] = ag;
-        ambient_b[mat_count] = ab;
-
-        diffuse_r[mat_count] = dr;
-        diffuse_g[mat_count] = dg;
-        diffuse_b[mat_count] = db;
-
-        specular_r[mat_count] = sr;
-        specular_g[mat_count] = sg;
-        specular_b[mat_count] = sb;
-        phong_cos[mat_count] = ns;
-
-        trans_r[mat_count] = tr;
-        trans_g[mat_count] = tg;
-        trans_b[mat_count] = tb;
-        ior[mat_count] = new_ior;
+        materials[mat_count].ambient = vec3(ar, ag, ab);
+        materials[mat_count].diffuse = vec3(dr, dg, db);
+        materials[mat_count].specular = vec3(sr, sg, sb);
+        materials[mat_count].transmissive = vec3(tr, tg, tb);
+        materials[mat_count].phong_cos = ns;
+        materials[mat_count].ior = new_ior;
 
         mat_count++; //up the material count
-
-        //print statement for testing
         printf("Material: %f %f %f %f %f %f %f %f %f %f %f %f %f %f\n", ar, ag, ab, dr, dg, db, sr, sg, sb, ns, tr, tg, tb, new_ior);
       } else {
 				std::cerr << "invalid " << line << std::endl;
@@ -231,7 +217,6 @@ void parseSceneFile(std::string fileName){
         point_light_x[num_lights] = x;
         point_light_y[num_lights] = y;
         point_light_z[num_lights] = z;
-
         num_lights++;
         printf("Point light color: (%f, %f, %f)\n", r, g, b);
         printf("Point light position: (%f, %f, %f)\n", x, y, z);
@@ -252,6 +237,7 @@ void parseSceneFile(std::string fileName){
         vec3 spotLightDir = vec3(dx, dy, dz);
         float angle1 = ang1;
         float angle2 = ang2;
+
         printf("Spot light color: (%f, %f, %f)\n", r, g, b);
         printf("Spot light position: (%f, %f, %f)\n", px, py, pz);
         printf("Spot light direciton: (%f, %f, %f)\n", dx, dy, dz);
