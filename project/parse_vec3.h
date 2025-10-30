@@ -67,6 +67,7 @@ struct Triangle {
     vec3 v1, v2, v3;
     vec3 n1, n2, n3;
     bool smooth;
+    int tri_material_index;
 };
 
 Triangle triangles[MAX_INPUT];
@@ -351,6 +352,7 @@ void parseSceneFile(std::string fileName){
             triangles[tri_count].v2 = *vertices[v2];
             triangles[tri_count].v3 = *vertices[v3];
             triangles[tri_count].smooth = false;
+            triangles[tri_count].tri_material_index = mat_count - 1;
             tri_count++;
             printf("Triangle vertex numbers: %d %d %d\n", v1, v2, v3);
         }

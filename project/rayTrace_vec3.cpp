@@ -66,6 +66,7 @@ bool sameSide(vec3 p1, vec3 p2, vec3 a, vec3 b) {
 bool pointInRegTriangle(vec3 p, vec3 a, vec3 b, vec3 c) {
   return sameSide(p, a, b, c) && sameSide(p, b, a, c) && sameSide(p, c, a, b);
 }
+// TEMP CODE
 
 //if the sphere was intersected, then save the information about it in the HitInformation struct
 bool FindIntersection(vec3 start, vec3 dir, HitInformation& hitInfo) {
@@ -83,40 +84,45 @@ bool FindIntersection(vec3 start, vec3 dir, HitInformation& hitInfo) {
       hitInfo.dist = dist;
     }
   }
-  for (int t = 0; t < tri_count; t++) {
-    vec3 triangle_v1 = triangles[t].v1;
-    vec3 triangle_v2 = triangles[t].v2;
-    vec3 triangle_v3 = triangles[t].v3;
+  for (int tri = 0; tri < tri_count; tri++) {
+    vec3 triangle_v1 = triangles[tri].v1;
+    vec3 triangle_v2 = triangles[tri].v2;
+    vec3 triangle_v3 = triangles[tri].v3;
     // calculate point first
     vec3 c0 = triangle_v1;
     vec3 N;
     vec3 point;
     // depending on type triangle, after we find the point, then calculate its normal
-    if (!triangles[t].smooth) {
+    if (!triangles[tri].smooth) {
       vec3 edge1 = triangle_v2 - triangle_v1;
       vec3 edge2 = triangle_v3 - triangle_v1;
       N = cross(edge1, edge2).normalized();
       //ray plane intersection formula
+      if (fabs(dot(dir, N)) < 0.001f) { //checks if ray is parallel to plane // TEMP CHANGE
+        //hitInfo.hit = false;
+          continue;
+      }
       float d = -dot(c0, N);
       float t = -(dot(start, N) + d) / dot(dir, N);
-      if (dot(dir, N) == 0) { //checks if ray is parallel to plane
-        hitInfo.hit = false;
-      }
       if (t < 0) { //intersection is behind the camera
         continue; //ignore
-      } else {
-        point = start+t*dir; //point where ray intersect plane
-        if (pointInRegTriangle(point, triangle_v1, triangle_v2, triangle_v3)) {
-          if (closest_dist < 0 || t < closest_dist) {
-            closest_dist = t;
-            hitInfo.tri_num = t;
-            hitInfo.hit = true;
-            hitInfo.point = point;
-            hitInfo.normal = N;
-            hitInfo.dist = t;
+      } 
+        
+      point = start+t*dir; //point where ray intersect plane
+      if (pointInRegTriangle(point, triangle_v1, triangle_v2, triangle_v3)) {
+       // TEMP CHANGE
+       //if (pointInTriangle(point, triangle_v1, triangle_v2, triangle_v3)){
+         if (closest_dist < 0 || t < closest_dist) {
+           closest_dist = t;
+           hitInfo.tri_num = tri;
+           hitInfo.hit = true;
+           hitInfo.point = point;
+           if (dot(dir, N) > 0) { N = N * -1; }
+           hitInfo.normal = N;
+           hitInfo.dist = t;
           }
         }
-      }
+      
     }
   }
   return hitInfo.hit;
@@ -153,7 +159,12 @@ bool refract(vec3 d, vec3 n, float r, vec3& t) {
 
 Color ApplyLightingModel(vec3 start, vec3 dir, HitInformation& hitInfo, int depth) {
   vec3 contribution = vec3(0, 0, 0);
-  int mat_index = spheres[hitInfo.sphere_num].sphere_material_index;
+  //int mat_index = spheres[hitInfo.sphere_num].sphere_material_index;
+  int mat_index;
+  if (hitInfo.tri_num >= 0)
+      mat_index = triangles[hitInfo.tri_num].tri_material_index;
+  else
+      mat_index = spheres[hitInfo.sphere_num].sphere_material_index;
   // getting diffuse, specular, ambient, and transmissive coefficients from parser
   vec3 kd = materials[mat_index].diffuse;
   vec3 ks = materials[mat_index].specular;
