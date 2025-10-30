@@ -28,29 +28,13 @@ struct HitInformation {
   vec3 point; //hit point
   vec3 normal; //normal along hit point
   int sphere_num; //index of the hit sphere
+  int tri_num;
   bool hit = false;
   float dist;
 };
 
 Color ApplyLightingModel(vec3 start, vec3 dir, HitInformation& hitInfo, int depth = 0);
 Color evaluateRayTree(vec3 start, vec3 dir, int depth = 0);
-
-
-//Tests is the ray intersects the sphere
-bool raySphereIntersect(vec3 start, vec3 dir, vec3 center, float radius){
-  float a = dot(dir,dir);
-  vec3 toStart = (start - center);
-  float b = 2 * dot(dir,toStart);
-  float c = dot(toStart,toStart) - radius*radius;
-  float discr = b*b - 4*a*c;
-  if (discr < 0) return false;
-  else{
-    float t0 = (-b + sqrt(discr))/(2*a);
-    float t1 = (-b - sqrt(discr))/(2*a);
-    if (t0 > 0 || t1 > 0) return true;
-  }
-  return false;
-}
 
 //returns were exactly the ray intersected the sphere
 float whereRaySphereIntersect(vec3 start, vec3 dir, vec3 center, float radius){
@@ -73,6 +57,16 @@ float whereRaySphereIntersect(vec3 start, vec3 dir, vec3 center, float radius){
       return -1; //no intersection
   }
 }
+bool sameSide(vec3 p1, vec3 p2, vec3 a, vec3 b) {
+  vec3 cp1 = cross(b-a, p1-a);
+  vec3 cp2 = cross(b-a, p2-a);
+  return dot(cp1, cp2) >= 0;
+}
+
+bool pointInRegTriangle(vec3 p, vec3 a, vec3 b, vec3 c) {
+  return sameSide(p, a, b, c) && sameSide(p, b, a, c) && sameSide(p, c, a, b);
+}
+
 //if the sphere was intersected, then save the information about it in the HitInformation struct
 bool FindIntersection(vec3 start, vec3 dir, HitInformation& hitInfo) {
   float closest_dist = -1;
@@ -87,6 +81,38 @@ bool FindIntersection(vec3 start, vec3 dir, HitInformation& hitInfo) {
       hitInfo.point = start + dir * dist;
       hitInfo.normal = (hitInfo.point - spherePos).normalized();
       hitInfo.dist = dist;
+    }
+  }
+  for (int t = 0; t < tri_count; t++) {
+    vec3 triangle_v1 = triangles[t].v1;
+    vec3 triangle_v2 = triangles[t].v2;
+    vec3 triangle_v3 = triangles[t].v3;
+    // calculate point first
+    vec3 c0 = triangle_v1;
+    vec3 N;
+    vec3 point;
+    // depending on type triangle, after we find the point, then calculate its normal
+    if (!triangles[t].smooth) {
+      vec3 edge1 = triangle_v2 - triangle_v1;
+      vec3 edge2 = triangle_v3 - triangle_v1;
+      N = cross(edge1, edge2).normalized();
+      //ray plane intersection formula
+      float d = -dot(c0, N);
+      float t = -(dot(start, N) + d) / dot(dir, N);
+      if (dot(N, dir) == 0) { //checks if ray is parallel to plane
+        hitInfo.hit = false;
+      }
+      if (t < 0) { //intersection is behind the camera
+        continue; //ignore
+      } else {
+        point = start+t*dir; //point where ray intersect plane
+        if (pointInRegTriangle(point, triangle_v1, triangle_v2, triangle_v3)) {
+          hitInfo.tri_num = t;
+          hitInfo.hit = true;
+          hitInfo.point = point;
+          hitInfo.normal = N;
+        }
+      }
     }
   }
   return hitInfo.hit;
