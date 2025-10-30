@@ -360,7 +360,7 @@ void parseSceneFile(std::string fileName){
             std::cerr << "invalid triangle" << std::endl;
         }
     }
-    if (strncmp(line, "normal_triangle:", 16 == 0)){
+    if (strncmp(line, "normal_triangle:", 16) == 0){
         int v1, v2, v3;
         int n1, n2, n3;
         if (sscanf(line + 16, "%d %d %d %d %d %d", &v1, &v2, &v3, &n1, &n2, &n3) == 6) {
@@ -374,7 +374,7 @@ void parseSceneFile(std::string fileName){
             triangles[tri_count].n3 = *normals[n3];
             triangles[tri_count].smooth = true;
             tri_count++;
-            printf("Normal triangle vertex and normal numbers: %d %d %d %d %d %d", v1, v2, v3, n1, n2, n3);
+            printf("Normal triangle vertex and normal numbers: %d %d %d %d %d %d\n", v1, v2, v3, n1, n2, n3);
         }
         else {
             std::cerr << "invalid normal triangle" << std::endl;
