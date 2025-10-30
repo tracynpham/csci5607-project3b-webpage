@@ -99,7 +99,7 @@ bool FindIntersection(vec3 start, vec3 dir, HitInformation& hitInfo) {
       //ray plane intersection formula
       float d = -dot(c0, N);
       float t = -(dot(start, N) + d) / dot(dir, N);
-      if (dot(N, dir) == 0) { //checks if ray is parallel to plane
+      if (dot(dir, N) == 0) { //checks if ray is parallel to plane
         hitInfo.hit = false;
       }
       if (t < 0) { //intersection is behind the camera
@@ -107,10 +107,14 @@ bool FindIntersection(vec3 start, vec3 dir, HitInformation& hitInfo) {
       } else {
         point = start+t*dir; //point where ray intersect plane
         if (pointInRegTriangle(point, triangle_v1, triangle_v2, triangle_v3)) {
-          hitInfo.tri_num = t;
-          hitInfo.hit = true;
-          hitInfo.point = point;
-          hitInfo.normal = N;
+          if (closest_dist < 0 || t < closest_dist) {
+            closest_dist = t;
+            hitInfo.tri_num = t;
+            hitInfo.hit = true;
+            hitInfo.point = point;
+            hitInfo.normal = N;
+            hitInfo.dist = t;
+          }
         }
       }
     }
