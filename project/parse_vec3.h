@@ -62,23 +62,24 @@ vec3 ambient_light = vec3(0,0,0);
 int max_depth = 5;
 
 //store triangles
-struct Triangle {
-  // vertexes
-    vec3 v1, v2, v3;
-    vec3 normal;
-};
 
-struct NormalTriangle {
+struct Triangle {
     vec3 v1, v2, v3;
     vec3 n1, n2, n3;
+    bool smooth;
 };
 
 Triangle triangles[MAX_INPUT];
 int tri_count = 0;
 
 // triangle vertexes and normals
-int  max_vertices = 0;
-int max_normals = 0;
+int  max_vertices;
+vec3** vertices;
+int max_normals;
+vec3** normals;
+int vert_count = 0;
+int norm_count = 0;
+
 void parseSceneFile(std::string fileName){
   //TODO: Override the default values with new data from the file "fileName"
   FILE* myFile = fopen(fileName.c_str(), "r");
@@ -279,7 +280,11 @@ void parseSceneFile(std::string fileName){
             max_vertices = max_vert;
             // COME BACK LATER TO CREATE ARRAY
             // vec3 vertices[]
-            printf("Max vertices: %d\n", &max_vert);
+            vertices = new vec3*[max_vertices];
+            for (int i = 0; i < max_vertices; i++) {
+                vertices[i] = new vec3(0, 0, 0);
+            }
+            printf("Max vertices: %d\n", max_vert);
         }
         else {
             std::cerr << "invalid max vertices" << std::endl;
@@ -291,7 +296,11 @@ void parseSceneFile(std::string fileName){
             max_normals = max_norm;
             // COME BACK LATER TO CREATE ARRAY
             // vec3 normals[]
-            printf("Max normals: %d\n", &max_norm);
+            normals = new vec3*[max_normals];
+            for (int i = 0; i < max_normals; i++) {
+                normals[i] = new vec3(0, 0, 0);
+            }
+            printf("Max normals: %d\n", max_norm);
         }
         else {
             std::cerr << "invalid max normals" << std::endl;
@@ -302,11 +311,13 @@ void parseSceneFile(std::string fileName){
             std::cerr << "must specify max vertices" << std::endl;
         }
         int x, y, z;
-        if (sscanf(line + 7, "%d %d %d", &x, &y, &z) == 1) {
-            vec3 vertex = vec3(x, y, z);
+        if (sscanf(line + 7, "%d %d %d", &x, &y, &z) == 3) {
+            vec3* vertex = new vec3(x, y, z);
             // ADD VERTEX TO VERTICES ARRAY
             // INCREMENT VERTEX COUNT
-            printf("Vertex: (%d, %d, %d)\n", &x, &y, &z);
+            vertices[vert_count] = vertex;
+            vert_count++;
+            printf("Vertex: (%d, %d, %d)\n", x, y, z);
         }
         else {
             std::cerr << "invalid vertex" << std::endl;
@@ -317,11 +328,13 @@ void parseSceneFile(std::string fileName){
             std::cerr << "must specify max normals" << std::endl;
         }
         int x, y, z;
-        if (sscanf(line + 7, "%d %d %d", &x, &y, &z) == 1) {
-            vec3 normal = vec3(x, y, z);
+        if (sscanf(line + 7, "%d %d %d", &x, &y, &z) == 3) {
+            vec3* normal = new vec3(x, y, z);
             // ADD NORMAL TO NORMALS ARRAY
             // INCREMENT NORMAL COUNT
-            printf("Normal: (%d, %d, %d)\n", &x, &y, &z);
+            normals[norm_count] = normal;
+            norm_count++;
+            printf("Normal: (%d, %d, %d)\n", x, y, z);
         }
         else {
             std::cerr << "invalid normal" << std::endl;
@@ -329,15 +342,17 @@ void parseSceneFile(std::string fileName){
     }
     if (strncmp(line, "triangle:", 9) == 0) {
         int v1, v2, v3;
-        if (sscanf(line + 9, "%d %d %d", &v1, &v2, &v3) == 1) {
+        if (sscanf(line + 9, "%d %d %d", &v1, &v2, &v3) == 3) {
             // CURRENTLY WRONG, WILL NOT BE AN ERROR ONCE VERTEX ARRAY IS CREATED
-            vec3 edge1 = vertices[v2] - vertices[v1];
-            vec3 edge2 = vertices[v3] - vertices[v1];
-            vec3 normal = cross(edge1, edge2).normalized();
-            triangles[tri_count].v1 = vertices[v1];
-            triangles[tri_count].v2 = vertices[v2];
-            triangles[tri_count].v3 = vertices[v3];
-            triangles[tri_count].normal = normal;
+            /*vec3 edge1 = *vertices[v2] - *vertices[v1];
+            vec3 edge2 = *vertices[v3] - *vertices[v1];
+            vec3 normal = cross(edge1, edge2).normalized();*/
+            triangles[tri_count].v1 = *vertices[v1];
+            triangles[tri_count].v2 = *vertices[v2];
+            triangles[tri_count].v3 = *vertices[v3];
+            triangles[tri_count].smooth = false;
+            tri_count++;
+            printf("Triangle vertex numbers: %d %d %d\n", v1, v2, v3);
         }
         else {
             std::cerr << "invalid triangle" << std::endl;
@@ -346,15 +361,18 @@ void parseSceneFile(std::string fileName){
     if (strncmp(line, "normal_triangle:", 16 == 0)){
         int v1, v2, v3;
         int n1, n2, n3;
-        if (sscanf(line + 16, "%d %d %d %d %d %d", &v1, &v2, &v3, &n1, &n2, &n3) == 1) {
+        if (sscanf(line + 16, "%d %d %d %d %d %d", &v1, &v2, &v3, &n1, &n2, &n3) == 6) {
             // CURRENTLY WRONG, WILL NOT BE AN ERROR ONCE VERTEX AND NORMALS ARRAY IS CREATED
             // NEED TO FIGURE OUT HOW TO HOLD AN ARRAY FOR BOTH TYPES OF TRIANGLEs
-            triangles[tri_count].v1 = vertices[v1];
-            triangles[tri_count].v2 = vertices[v2];
-            triangles[tri_count].v3 = vertices[v3];
-            triangles[tri_count].n1 = normals[n1];
-            triangles[tri_count].n2 = normals[n2];
-            triangles[tri_count].n3 = normals[n3];
+            triangles[tri_count].v1 = *vertices[v1];
+            triangles[tri_count].v2 = *vertices[v2];
+            triangles[tri_count].v3 = *vertices[v3];
+            triangles[tri_count].n1 = *normals[n1];
+            triangles[tri_count].n2 = *normals[n2];
+            triangles[tri_count].n3 = *normals[n3];
+            triangles[tri_count].smooth = true;
+            tri_count++;
+            printf("Normal triangle vertex and normal numbers: %d %d %d %d %d %d", v1, v2, v3, n1, n2, n3);
         }
         else {
             std::cerr << "invalid normal triangle" << std::endl;
