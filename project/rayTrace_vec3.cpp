@@ -1,5 +1,6 @@
 
 //To Compile: g++ -fsanitize=address -std=c++14 rayTrace_vec3.cpp -o ray
+//Compile with Parallelism on MacOS: g++-15 -fopenmp -std=c++14 rayTrace_vec3.cpp -o ray
 // v2 for csci 5607 project 3b
 // tracy and mary 
 
@@ -18,6 +19,7 @@
 
 //High resolution timer
 #include <chrono>
+#include <omp.h>
 
 //Scene file parser
 #include "parse_vec3.h"
@@ -82,11 +84,18 @@ bool pointInNormalTriangle(vec3 p, vec3 a, vec3 b, vec3 c, float &alpha, float &
   float d21 = dot(v2, v1);
   float denom = (d00 * d11) - (d01 * d01);
 
+  float EPSILON = 1e-6f;
+  if (fabs(denom) < EPSILON) {
+    alpha = beta = gamma = -1;
+    return false;
+  }
+
   alpha = (d11 * d20 - d01 * d21) / denom;
   beta = (d00 * d21 - d01 * d20) / denom;
   gamma = 1.0f - alpha - beta;
 
-  return (alpha >= 0.0f) && (beta >= 0.0f) && (alpha + beta <= 1.0f);
+  // return (alpha >= 0.0f) && (beta >= 0.0f) && (gamma >= 0.0f);
+  return (alpha >= -EPSILON) && (beta >= -EPSILON) && (gamma >= -EPSILON);
 }
 
 void TriangleIntersection(vec3 start, vec3 dir, HitInformation& hitInfo, float& closest_dist) {
@@ -165,6 +174,7 @@ void TriangleIntersection(vec3 start, vec3 dir, HitInformation& hitInfo, float& 
     }
   }
 }
+
 //Find intersection of different shapes and save into hitInfo
 bool FindIntersection(vec3 start, vec3 dir, HitInformation& hitInfo) {
   float closest_dist = -1;
@@ -390,24 +400,48 @@ int main(int argc, char** argv){
   float imgW = img_width, imgH = img_height;
   float halfW = imgW/2, halfH = imgH/2;
   float d = halfH / tanf(halfAngleVFOV * (M_PI / 180.0f));
-
-  Image outputImg = Image(img_width,img_height);
+  Image outputImgSerial = Image(img_width,img_height);
+  
+  std::cout << "--------------------Performance-------------------- " << std::endl;
   auto t_start = std::chrono::high_resolution_clock::now();
-  #pragma omp parallel for
-  for (int i = 0; i < img_width; i++){
-    for (int j = 0; j < img_height; j++){
-      float u = (halfW - (imgW)*((i+0.5)/imgW));
-      float v = (halfH - (imgH)*((j+0.5)/imgH));
-      vec3 p = eye - d*forward + u*right + v*up;
-      vec3 rayDir = (p - eye).normalized();
-      Color color = evaluateRayTree(eye, rayDir, 0);
-      outputImg.setPixel(i, j, color);
-    }
+    for (int i = 0; i < img_width; i++) {
+      for (int j = 0; j < img_height; j++) {
+        float u = (halfW - (imgW) * ((i + 0.5f) / imgW));
+        float v = (halfH - (imgH) * ((j + 0.5f) / imgH));
+        vec3 p = eye - d * forward + u * right + v * up;
+        vec3 rayDir = (p - eye).normalized();
+        Color color = evaluateRayTree(eye, rayDir, 0);
+        outputImgSerial.setPixel(i, j, color);
+      }
   }
   auto t_end = std::chrono::high_resolution_clock::now();
-  printf("Rendering took %.2f ms\n",std::chrono::duration<double, std::milli>(t_end-t_start).count());
+  double serial_duration = std::chrono::duration<double>(t_end - t_start).count();
+  printf("Serial Rendering took %.2f s\n", serial_duration);
+  outputImgSerial.write(imgName.c_str());
 
-  outputImg.write(imgName.c_str());
+  //parallel render using OpenMP
+  Image outputImgParallel = Image(img_width,img_height);
+  auto t_start_parallel = std::chrono::high_resolution_clock::now();
+  #pragma omp parallel for
+  for (int i = 0; i < img_width; i++) {
+    for (int j = 0; j < img_height; j++) {
+      float u = (halfW - (imgW) * ((i + 0.5f) / imgW));
+      float v = (halfH - (imgH) * ((j + 0.5f) / imgH));
+      vec3 p = eye - d * forward + u * right + v * up;
+      vec3 rayDir = (p - eye).normalized();
+      Color color = evaluateRayTree(eye, rayDir, 0);
+      outputImgParallel.setPixel(i, j, color);
+      }
+  }
+  auto t_end_parallel = std::chrono::high_resolution_clock::now();
+  double parallel_duration = std::chrono::duration<double>(t_end_parallel - t_start_parallel).count();
+  printf("Parallel Rendering took %.2f s\n", parallel_duration);
+  outputImgParallel.write(imgName.c_str());
+
+  double speedup = serial_duration / parallel_duration;
+  std::cout << "Speedup: " << speedup << std::endl;
+  std::cout << "----------End of Performance Analysis---------- " << std::endl;
+
   // check if vertices and/or normals exist
   // if they do, delete them to free up the space we allocate
   if (vertices) {
@@ -424,25 +458,5 @@ int main(int argc, char** argv){
     delete[] normals;
     printf("Freed up space from normals array\n");
   }
-  const int n = 100000000;
-
-    auto start_time = std::chrono::high_resolution_clock::now();
-    auto end_time = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> serial_duration = end_time - start_time;
-
-    start_time = std::chrono::high_resolution_clock::now();
-    end_time = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> parallel_duration = end_time - start_time;
-
-    std::cout << "Serial duration: "
-              << serial_duration.count() << " seconds"
-              << std::endl;
-    std::cout << "Parallel duration: "
-              << parallel_duration.count() << " seconds"
-              << std::endl;
-    std::cout << "Speedup: "
-              << serial_duration.count()
-                     / parallel_duration.count()
-              << std::endl;
   return 0;
 }
