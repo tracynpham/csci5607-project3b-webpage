@@ -319,12 +319,12 @@ void parseSceneFile(std::string fileName){
       if (max_vertices == 0) {
         std::cerr << "must specify max vertices" << std::endl;
       }
-      int x, y, z;
-      if (sscanf(line + 7, "%d %d %d", &x, &y, &z) == 3) {
+      float x, y, z;
+      if (sscanf(line + 7, "%f %f %f", &x, &y, &z) == 3) {
         vec3* vertex = new vec3(x, y, z);
         vertices[vert_count] = vertex;
         vert_count++;
-        printf("Vertex: (%d, %d, %d)\n", x, y, z);
+        printf("Vertex: (%f, %f, %f)\n", x, y, z);
       }
       else {
         std::cerr << "invalid vertex" << std::endl;

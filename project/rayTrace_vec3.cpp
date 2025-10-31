@@ -393,6 +393,7 @@ int main(int argc, char** argv){
 
   Image outputImg = Image(img_width,img_height);
   auto t_start = std::chrono::high_resolution_clock::now();
+  #pragma omp parallel for
   for (int i = 0; i < img_width; i++){
     for (int j = 0; j < img_height; j++){
       float u = (halfW - (imgW)*((i+0.5)/imgW));
@@ -423,5 +424,25 @@ int main(int argc, char** argv){
     delete[] normals;
     printf("Freed up space from normals array\n");
   }
+  const int n = 100000000;
+
+    auto start_time = std::chrono::high_resolution_clock::now();
+    auto end_time = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> serial_duration = end_time - start_time;
+
+    start_time = std::chrono::high_resolution_clock::now();
+    end_time = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> parallel_duration = end_time - start_time;
+
+    std::cout << "Serial duration: "
+              << serial_duration.count() << " seconds"
+              << std::endl;
+    std::cout << "Parallel duration: "
+              << parallel_duration.count() << " seconds"
+              << std::endl;
+    std::cout << "Speedup: "
+              << serial_duration.count()
+                     / parallel_duration.count()
+              << std::endl;
   return 0;
 }
