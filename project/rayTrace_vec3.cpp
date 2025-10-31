@@ -270,6 +270,31 @@ Color ApplyLightingModel(vec3 start, vec3 dir, HitInformation& hitInfo, int dept
     contribution = contribution + totalLight * (1.0f / num_lights);
   }
   //more light logic after
+  for (int i = 0; i < num_dir_lights; i++) {
+      vec3 L = vec3(dir_light_x[i], dir_light_y[i], dir_light_z[i]).normalized() * -1;
+      vec3 lightColor = vec3(dir_light_r[i], dir_light_g[i], dir_light_b[i]);
+
+      vec3 shadow = hitInfo.point + hitInfo.normal * 0.001f;
+      HitInformation shadow_hit;
+      // check if light is blocked by an object
+      bool blocked = FindIntersection(shadow, L, shadow_hit);
+      if (blocked) {
+          continue;
+      }
+      // diffuse lighting
+      float diff = std::max(0.0f, dot(hitInfo.normal, L)); // n dot L
+      vec3 diffuse = kd * diff;
+
+      //specular lighting (blinn-phong)
+      vec3 H = (L + V).normalized();
+      float spec_angle = std::max(0.0f, dot(hitInfo.normal, H));
+      vec3 specular = ks * pow(spec_angle, ns);
+
+      vec3 totalLight = (diffuse + specular) * lightColor;
+
+      // add this light's contribution to the running total
+      contribution = contribution + totalLight;
+  }
   //Following the pseudocode from lecture slides 13
   if (depth <= max_depth) {
       float mat_ior = materials[mat_index].ior;
