@@ -365,5 +365,21 @@ int main(int argc, char** argv){
   printf("Rendering took %.2f ms\n",std::chrono::duration<double, std::milli>(t_end-t_start).count());
 
   outputImg.write(imgName.c_str());
+  // check if vertices and/or normals exist
+  // if they do, delete them to free up the space we allocate
+  if (vertices) {
+      for (int i = 0; i < max_vertices; i++) {
+          delete vertices[i];
+      }
+      delete[] vertices;
+      printf("Freed up space from vertices array\n");
+  }
+  if (normals) {
+      for (int i = 0; i < max_normals; i++) {
+          delete normals[i];
+      }
+      delete[] normals;
+      printf("Freed up space from normals array\n");
+  }
   return 0;
 }
