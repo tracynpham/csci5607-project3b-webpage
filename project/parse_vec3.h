@@ -68,6 +68,8 @@ struct Triangle {
     vec3 n1, n2, n3;
     bool smooth;
     int tri_material_index;
+    vec3 edge1, edge2;
+    vec3 N;
 };
 
 Triangle triangles[MAX_INPUT];
@@ -276,109 +278,99 @@ void parseSceneFile(std::string fileName){
       }
     }
     if (strncmp(line, "max_vertices:", 13) == 0) {
-        int max_vert;
-        if (sscanf(line + 13, "%d", &max_vert) == 1) {
-            max_vertices = max_vert;
-            // COME BACK LATER TO CREATE ARRAY
-            // vec3 vertices[]
-            vertices = new vec3*[max_vertices];
-            for (int i = 0; i < max_vertices; i++) {
-                vertices[i] = new vec3(0, 0, 0);
-            }
-            printf("Max vertices: %d\n", max_vert);
+      int max_vert;
+      if (sscanf(line + 13, "%d", &max_vert) == 1) {
+        max_vertices = max_vert;
+        vertices = new vec3*[max_vertices];
+        for (int i = 0; i < max_vertices; i++) {
+          vertices[i] = new vec3(0, 0, 0);
         }
-        else {
-            std::cerr << "invalid max vertices" << std::endl;
-        }
+        printf("Max vertices: %d\n", max_vert);
+      }
+      else {
+        std::cerr << "invalid max vertices" << std::endl;
+      }
     }
     if (strncmp(line, "max_normals:", 12) == 0) {
-        int max_norm;
-        if (sscanf(line + 12, "%d", &max_norm) == 1) {
-            max_normals = max_norm;
-            // COME BACK LATER TO CREATE ARRAY
-            // vec3 normals[]
-            normals = new vec3*[max_normals];
-            for (int i = 0; i < max_normals; i++) {
-                normals[i] = new vec3(0, 0, 0);
-            }
-            printf("Max normals: %d\n", max_norm);
+      int max_norm;
+      if (sscanf(line + 12, "%d", &max_norm) == 1) {
+        max_normals = max_norm;
+        normals = new vec3*[max_normals];
+        for (int i = 0; i < max_normals; i++) {
+          normals[i] = new vec3(0, 0, 0);
         }
-        else {
-            std::cerr << "invalid max normals" << std::endl;
-        }
+        printf("Max normals: %d\n", max_norm);
+      }
+      else {
+        std::cerr << "invalid max normals" << std::endl;
+      }
     }
     if (strncmp(line, "vertex:", 7) == 0) {
-        if (max_vertices == 0) {
-            std::cerr << "must specify max vertices" << std::endl;
-        }
-        int x, y, z;
-        if (sscanf(line + 7, "%d %d %d", &x, &y, &z) == 3) {
-            vec3* vertex = new vec3(x, y, z);
-            // ADD VERTEX TO VERTICES ARRAY
-            // INCREMENT VERTEX COUNT
-            vertices[vert_count] = vertex;
-            vert_count++;
-            printf("Vertex: (%d, %d, %d)\n", x, y, z);
-        }
-        else {
-            std::cerr << "invalid vertex" << std::endl;
-        }
+      if (max_vertices == 0) {
+        std::cerr << "must specify max vertices" << std::endl;
+      }
+      int x, y, z;
+      if (sscanf(line + 7, "%d %d %d", &x, &y, &z) == 3) {
+        vec3* vertex = new vec3(x, y, z);
+        vertices[vert_count] = vertex;
+        vert_count++;
+        printf("Vertex: (%d, %d, %d)\n", x, y, z);
+      }
+      else {
+        std::cerr << "invalid vertex" << std::endl;
+      }
     }
     if (strncmp(line, "normal:", 7) == 0) {
-        if (max_normals == 0) {
-            std::cerr << "must specify max normals" << std::endl;
-        }
-        int x, y, z;
-        if (sscanf(line + 7, "%d %d %d", &x, &y, &z) == 3) {
-            vec3* normal = new vec3(x, y, z);
-            // ADD NORMAL TO NORMALS ARRAY
-            // INCREMENT NORMAL COUNT
-            normals[norm_count] = normal;
-            norm_count++;
-            printf("Normal: (%d, %d, %d)\n", x, y, z);
-        }
-        else {
-            std::cerr << "invalid normal" << std::endl;
-        }
+      if (max_normals == 0) {
+        std::cerr << "must specify max normals" << std::endl;
+      }
+      int x, y, z;
+      if (sscanf(line + 7, "%d %d %d", &x, &y, &z) == 3) {
+        vec3* normal = new vec3(x, y, z);
+        normals[norm_count] = normal;
+        norm_count++;
+        printf("Normal: (%d, %d, %d)\n", x, y, z);
+      }
+      else {
+        std::cerr << "invalid normal" << std::endl;
+      }
     }
     if (strncmp(line, "triangle:", 9) == 0) {
-        int v1, v2, v3;
-        if (sscanf(line + 9, "%d %d %d", &v1, &v2, &v3) == 3) {
-            // CURRENTLY WRONG, WILL NOT BE AN ERROR ONCE VERTEX ARRAY IS CREATED
-            /*vec3 edge1 = *vertices[v2] - *vertices[v1];
-            vec3 edge2 = *vertices[v3] - *vertices[v1];
-            vec3 normal = cross(edge1, edge2).normalized();*/
-            triangles[tri_count].v1 = *vertices[v1];
-            triangles[tri_count].v2 = *vertices[v2];
-            triangles[tri_count].v3 = *vertices[v3];
-            triangles[tri_count].smooth = false;
-            triangles[tri_count].tri_material_index = mat_count - 1;
-            tri_count++;
-            printf("Triangle vertex numbers: %d %d %d\n", v1, v2, v3);
-        }
-        else {
-            std::cerr << "invalid triangle" << std::endl;
-        }
+      int v1, v2, v3;
+      if (sscanf(line + 9, "%d %d %d", &v1, &v2, &v3) == 3) {
+        triangles[tri_count].v1 = *vertices[v1];
+        triangles[tri_count].v2 = *vertices[v2];
+        triangles[tri_count].v3 = *vertices[v3];
+
+        triangles[tri_count].edge1 = triangles[tri_count].v2 - triangles[tri_count].v1;
+        triangles[tri_count].edge2 = triangles[tri_count].v3 - triangles[tri_count].v1;
+        triangles[tri_count].N = cross(triangles[tri_count].edge1, triangles[tri_count].edge2).normalized();
+        triangles[tri_count].smooth = false;
+        triangles[tri_count].tri_material_index = (mat_count > 0) ? (mat_count - 1) : 0;
+        tri_count++;
+        printf("Triangle vertex numbers: %d %d %d\n", v1, v2, v3);
+      }
+      else {
+        std::cerr << "invalid triangle" << std::endl;
+      }
     }
     if (strncmp(line, "normal_triangle:", 16) == 0){
-        int v1, v2, v3;
-        int n1, n2, n3;
-        if (sscanf(line + 16, "%d %d %d %d %d %d", &v1, &v2, &v3, &n1, &n2, &n3) == 6) {
-            // CURRENTLY WRONG, WILL NOT BE AN ERROR ONCE VERTEX AND NORMALS ARRAY IS CREATED
-            // NEED TO FIGURE OUT HOW TO HOLD AN ARRAY FOR BOTH TYPES OF TRIANGLEs
-            triangles[tri_count].v1 = *vertices[v1];
-            triangles[tri_count].v2 = *vertices[v2];
-            triangles[tri_count].v3 = *vertices[v3];
-            triangles[tri_count].n1 = *normals[n1];
-            triangles[tri_count].n2 = *normals[n2];
-            triangles[tri_count].n3 = *normals[n3];
-            triangles[tri_count].smooth = true;
-            tri_count++;
-            printf("Normal triangle vertex and normal numbers: %d %d %d %d %d %d\n", v1, v2, v3, n1, n2, n3);
-        }
-        else {
-            std::cerr << "invalid normal triangle" << std::endl;
-        }
+      int v1, v2, v3;
+      int n1, n2, n3;
+      if (sscanf(line + 16, "%d %d %d %d %d %d", &v1, &v2, &v3, &n1, &n2, &n3) == 6) {
+        triangles[tri_count].v1 = *vertices[v1];
+        triangles[tri_count].v2 = *vertices[v2];
+        triangles[tri_count].v3 = *vertices[v3];
+        triangles[tri_count].n1 = *normals[n1];
+        triangles[tri_count].n2 = *normals[n2];
+        triangles[tri_count].n3 = *normals[n3];
+        triangles[tri_count].smooth = true;
+        tri_count++;
+        printf("Normal triangle vertex and normal numbers: %d %d %d %d %d %d\n", v1, v2, v3, n1, n2, n3);
+      }
+      else {
+        std::cerr << "invalid normal triangle" << std::endl;
+      }
     }
   }
   printf("Orthogonal Camera Basis:\n");
