@@ -58,6 +58,15 @@ float dir_light_r[MAX_INPUT], dir_light_g[MAX_INPUT], dir_light_b[MAX_INPUT];
 float dir_light_x[MAX_INPUT], dir_light_y[MAX_INPUT], dir_light_z[MAX_INPUT];
 int num_dir_lights = 0;
 
+struct SpotLight {
+  vec3 color;
+  vec3 pos;
+  vec3 dir;
+  float angle1, angle2;
+};
+SpotLight spotLights[MAX_INPUT];
+int spot_count = 0;
+
 vec3 ambient_light = vec3(0,0,0);
 int max_depth = 5;
 
@@ -76,7 +85,7 @@ Triangle triangles[MAX_INPUT];
 int tri_count = 0;
 
 // triangle vertexes and normals
-int  max_vertices;
+int max_vertices;
 vec3** vertices;
 int max_normals;
 vec3** normals;
@@ -244,12 +253,12 @@ void parseSceneFile(std::string fileName){
       float ang1, ang2;
       if (sscanf(line + 11, "%f %f %f %f %f %f %f %f %f %f %f",
         &r, &g, &b, &px, &py, &pz, &dx, &dy, &dz, &ang1, &ang2) == 11) {
-        vec3 spotLightColor = vec3(r, g, b);
-        vec3 spotLightPos = vec3(px, py, pz);
-        vec3 spotLightDir = vec3(dx, dy, dz);
-        float angle1 = ang1;
-        float angle2 = ang2;
-
+        spotLights[spot_count].color = vec3(r, g, b);
+        spotLights[spot_count].pos = vec3(px, py, pz);
+        spotLights[spot_count].dir = vec3(dx, dy, dz);
+        spotLights[spot_count].angle1 = ang1 * (M_PI / 180.0f);
+        spotLights[spot_count].angle2 = ang2 * (M_PI / 180.0f);
+        spot_count++;
         printf("Spot light color: (%f, %f, %f)\n", r, g, b);
         printf("Spot light position: (%f, %f, %f)\n", px, py, pz);
         printf("Spot light direciton: (%f, %f, %f)\n", dx, dy, dz);

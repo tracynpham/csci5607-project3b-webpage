@@ -27,11 +27,12 @@
 struct HitInformation {
   vec3 point; //hit point
   vec3 normal; //normal along hit point
-  int sphere_num; //index of the hit sphere
-  int tri_num;
+  int sphere_num = -1; //index of the hit sphere
+  int tri_num = -1;
   bool hit = false;
-  float dist;
+  float dist = -1.0f;
 };
+
 
 Color ApplyLightingModel(vec3 start, vec3 dir, HitInformation& hitInfo, int depth = 0);
 Color evaluateRayTree(vec3 start, vec3 dir, int depth = 0);
@@ -234,7 +235,7 @@ Color ApplyLightingModel(vec3 start, vec3 dir, HitInformation& hitInfo, int dept
   // compute view vector pointing from hitpoint to the camera
   vec3 V = (eye - hitInfo.point).normalized();
 
-  // loop through all lights in the scene
+  //POINT LIGHT
   for (int i = 0; i < num_lights; i++) {
     // get light position and color, compute light vector pointing from hitpoint towards the light 
     vec3 lightPos = vec3(point_light_x[i], point_light_y[i], point_light_z[i]);
@@ -268,51 +269,93 @@ Color ApplyLightingModel(vec3 start, vec3 dir, HitInformation& hitInfo, int dept
     // add this light's contribution to the running total
     contribution = contribution + totalLight * (1.0f / num_lights);
   }
-  //more light logic after
+  //DIRECTIONAL LIGHT
   for (int i = 0; i < num_dir_lights; i++) {
-      vec3 L = vec3(dir_light_x[i], dir_light_y[i], dir_light_z[i]).normalized() * -1;
-      vec3 lightColor = vec3(dir_light_r[i], dir_light_g[i], dir_light_b[i]);
+    vec3 L = vec3(dir_light_x[i], dir_light_y[i], dir_light_z[i]).normalized() * -1;
+    vec3 lightColor = vec3(dir_light_r[i], dir_light_g[i], dir_light_b[i]);
 
-      vec3 shadow = hitInfo.point + hitInfo.normal * 0.001f;
-      HitInformation shadow_hit;
-      // check if light is blocked by an object
-      bool blocked = FindIntersection(shadow, L, shadow_hit);
-      if (blocked) {
-          continue;
-      }
-      // diffuse lighting
-      float diff = std::max(0.0f, dot(hitInfo.normal, L)); // n dot L
+    vec3 shadow = hitInfo.point + hitInfo.normal * 0.001f;
+    HitInformation shadow_hit;
+    // check if light is blocked by an object
+    bool blocked = FindIntersection(shadow, L, shadow_hit);
+    if (blocked) {
+      continue;
+    }
+    // diffuse lighting
+    float diff = std::max(0.0f, dot(hitInfo.normal, L)); // n dot L
+    vec3 diffuse = kd * diff;
+
+    //specular lighting (blinn-phong)
+    vec3 H = (L + V).normalized();
+    float spec_angle = std::max(0.0f, dot(hitInfo.normal, H));
+    vec3 specular = ks * pow(spec_angle, ns);
+
+    vec3 totalLight = (diffuse + specular) * lightColor;
+
+    // add this light's contribution to the running total
+    contribution = contribution + totalLight;
+  }
+  for (int i = 0; i < spot_count; i++) {
+    vec3 spotColor = spotLights[i].color; 
+    vec3 spotPos = spotLights[i].pos;      
+    vec3 spotDir = spotLights[i].dir;      
+    float ang1 = cosf(spotLights[i].angle1);
+    float ang2 = cosf(spotLights[i].angle2);
+
+    vec3 L = spotPos - hitInfo.point;
+    float distToLightSqr = dot(L, L);
+    vec3 LNorm = L.normalized();
+    float spotAngle = dot(LNorm * -1, spotDir); 
+
+    float spotIntensity = 1.0f / distToLightSqr;
+    if (spotAngle > ang1) {
+      spotIntensity *= 1.0f;
+    }
+    else if (spotAngle > ang2) {
+      float falloffRange = ang1 - ang2;
+      spotIntensity *= (spotAngle - ang2) / falloffRange;
+    }
+    else {
+      spotIntensity = 0.0f;
+    }
+    HitInformation shadowHit;
+    vec3 shadowOrigin = hitInfo.point + hitInfo.normal * 0.001f;
+    bool blocked = FindIntersection(shadowOrigin, LNorm, shadowHit);
+    float lightDistance = sqrt(distToLightSqr);
+    if (!blocked || shadowHit.dist >= lightDistance) {
+      //diffuse
+      float diff = std::max(0.0f, dot(hitInfo.normal, LNorm));
       vec3 diffuse = kd * diff;
 
-      //specular lighting (blinn-phong)
-      vec3 H = (L + V).normalized();
-      float spec_angle = std::max(0.0f, dot(hitInfo.normal, H));
-      vec3 specular = ks * pow(spec_angle, ns);
+      //Specular (Blinn-Phong)
+      vec3 V = (eye - hitInfo.point).normalized();
+      vec3 H = (LNorm + V).normalized();
+      float specAngle = std::max(0.0f, dot(hitInfo.normal, H));
+      vec3 specular = ks * pow(specAngle, ns);
 
-      vec3 totalLight = (diffuse + specular) * lightColor;
-
-      // add this light's contribution to the running total
-      contribution = contribution + totalLight;
+      // Add contribution
+      contribution = contribution + (diffuse + specular) * spotColor * spotIntensity;
+    }
   }
   //Following the pseudocode from lecture slides 13
   if (depth <= max_depth) {
-      float mat_ior = materials[mat_index].ior;
-      bool entering = dot(dir, hitInfo.normal) < 0.0f; // determine if ray is entering or exiting the object
+    float mat_ior = materials[mat_index].ior;
+    bool entering = dot(dir, hitInfo.normal) < 0.0f; // determine if ray is entering or exiting the object
       
-      // set surface normal to point in correct direction for refractio
-      // flip it when exiting 
-      vec3 n = hitInfo.normal;
-      vec3 nRefract = entering ? n : vec3(-n.x, -n.y, -n.z);
+    // set surface normal to point in correct direction for refractio
+    // flip it when exiting 
+    vec3 n = hitInfo.normal;
+    vec3 nRefract = entering ? n : vec3(-n.x, -n.y, -n.z);
 
-      // set refractive indices for snell's law
-      float n1 = entering ? 1.0f : mat_ior;
-      float n2 = entering ? mat_ior : 1.0f;
-      float snell_ratio = n1 / n2;
+    // set refractive indices for snell's law
+    float n1 = entering ? 1.0f : mat_ior;
+    float n2 = entering ? mat_ior : 1.0f;
+    float snell_ratio = n1 / n2;
 
-      // reflect ray computation (Fresnell effect)
-       vec3 r = reflect(dir, nRefract).normalized();
-       vec3 reflect_start = hitInfo.point + nRefract * 0.001f;
-       Color reflect_color = evaluateRayTree(reflect_start, r, depth + 1);
+    // reflect ray computation (Fresnell effect)
+      vec3 r = reflect(dir, nRefract).normalized();
+      vec3 reflect_start = hitInfo.point + nRefract * 0.001f;
+      Color reflect_color = evaluateRayTree(reflect_start, r, depth + 1);
       vec3 reflect_contrib = vec3(reflect_color.r, reflect_color.g, reflect_color.b) * ks;
 
       // refraction ray (only if refract is true)
@@ -320,10 +363,10 @@ Color ApplyLightingModel(vec3 start, vec3 dir, HitInformation& hitInfo, int dept
       bool canRefract = refract(dir, nRefract, snell_ratio, t); //snell's law
       vec3 k = vec3(0.0f, 0.0f, 0.0f);
       if (canRefract) {
-           vec3 t_dir = t.normalized();
-           vec3 refract_start = hitInfo.point + t_dir * 0.001f;
-           Color refract_color = evaluateRayTree(refract_start, t.normalized(), depth + 1);
-          k = vec3(refract_color.r, refract_color.g, refract_color.b) * kt;
+        vec3 t_dir = t.normalized();
+        vec3 refract_start = hitInfo.point + t_dir * 0.001f;
+        Color refract_color = evaluateRayTree(refract_start, t.normalized(), depth + 1);
+        k = vec3(refract_color.r, refract_color.g, refract_color.b) * kt;
       }
       
       contribution = contribution + (reflect_contrib + (1.0f) * (k));
@@ -336,8 +379,8 @@ int main(int argc, char** argv){
 
   //Read command line paramaters to get scene file
   if (argc != 2){
-     std::cout << "Usage: ./a.out scenefile\n";
-     return(0);
+    std::cout << "Usage: ./a.out scenefile\n";
+    return(0);
   }
   std::string secenFileName = argv[1];
 
@@ -367,18 +410,18 @@ int main(int argc, char** argv){
   // check if vertices and/or normals exist
   // if they do, delete them to free up the space we allocate
   if (vertices) {
-      for (int i = 0; i < max_vertices; i++) {
-          delete vertices[i];
-      }
-      delete[] vertices;
-      printf("Freed up space from vertices array\n");
+    for (int i = 0; i < max_vertices; i++) {
+      delete vertices[i];
+    }
+    delete[] vertices;
+    printf("Freed up space from vertices array\n");
   }
   if (normals) {
-      for (int i = 0; i < max_normals; i++) {
-          delete normals[i];
-      }
-      delete[] normals;
-      printf("Freed up space from normals array\n");
+    for (int i = 0; i < max_normals; i++) {
+      delete normals[i];
+    }
+    delete[] normals;
+    printf("Freed up space from normals array\n");
   }
   return 0;
 }
