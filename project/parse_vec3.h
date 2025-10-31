@@ -3,7 +3,8 @@
 
 #ifndef PARSE_VEC3_H
 #define PARSE_VEC3_H
-#define MAX_INPUT 256
+#define MAX_INPUT 1024
+#define MAX_TRIANGLES 10500
 
 #include <cstdio>
 #include <iostream>
@@ -81,7 +82,7 @@ struct Triangle {
     vec3 N;
 };
 
-Triangle triangles[MAX_INPUT];
+Triangle triangles[MAX_TRIANGLES];
 int tri_count = 0;
 
 // triangle vertexes and normals
@@ -333,12 +334,12 @@ void parseSceneFile(std::string fileName){
       if (max_normals == 0) {
         std::cerr << "must specify max normals" << std::endl;
       }
-      int x, y, z;
-      if (sscanf(line + 7, "%d %d %d", &x, &y, &z) == 3) {
+      float x, y, z;
+      if (sscanf(line + 7, "%f %f %f", &x, &y, &z) == 3) {
         vec3* normal = new vec3(x, y, z);
         normals[norm_count] = normal;
         norm_count++;
-        printf("Normal: (%d, %d, %d)\n", x, y, z);
+        printf("Normal: (%f, %f, %f)\n", x, y, z);
       }
       else {
         std::cerr << "invalid normal" << std::endl;
