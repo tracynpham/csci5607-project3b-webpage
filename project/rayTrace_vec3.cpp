@@ -409,21 +409,21 @@ int main(int argc, char** argv){
   Image outputImgSerial = Image(img_width,img_height);
   
   std::cout << "--------------------Performance-------------------- " << std::endl;
- /* auto t_start = std::chrono::high_resolution_clock::now();
-    for (int i = 0; i < img_width; i++) {
-      for (int j = 0; j < img_height; j++) {
-        float u = (halfW - (imgW) * ((i + 0.5f) / imgW));
-        float v = (halfH - (imgH) * ((j + 0.5f) / imgH));
-        vec3 p = eye - d * forward + u * right + v * up;
-        vec3 rayDir = (p - eye).normalized();
-        Color color = evaluateRayTree(eye, rayDir, 0);
-        outputImgSerial.setPixel(i, j, color);
-      }
-  }
-  auto t_end = std::chrono::high_resolution_clock::now();
-  double serial_duration = std::chrono::duration<double>(t_end - t_start).count();
-  printf("Serial Rendering took %.2f s\n", serial_duration);
-  outputImgSerial.write(imgName.c_str());*/
+  //auto t_start = std::chrono::high_resolution_clock::now();
+  //  for (int i = 0; i < img_width; i++) {
+  //    for (int j = 0; j < img_height; j++) {
+  //      float u = (halfW - (imgW) * ((i + 0.5f) / imgW));
+  //      float v = (halfH - (imgH) * ((j + 0.5f) / imgH));
+  //      vec3 p = eye - d * forward + u * right + v * up;
+  //      vec3 rayDir = (p - eye).normalized();
+  //      Color color = evaluateRayTree(eye, rayDir, 0);
+  //      outputImgSerial.setPixel(i, j, color);
+  //    }
+  //}
+  //auto t_end = std::chrono::high_resolution_clock::now();
+  //double serial_duration = std::chrono::duration<double>(t_end - t_start).count();
+  //printf("Serial Rendering took %.2f s\n", serial_duration);
+  //outputImgSerial.write(imgName.c_str());
 
   //parallel render using OpenMP
   Image outputImgParallel = Image(img_width,img_height);

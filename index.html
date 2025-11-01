@@ -197,8 +197,34 @@
             <p>
                 2. parallelism (10 points)
             </p>
-            <div class="image-container">
-
+            <br>
+            <small> How to compile and run this on Visual Studio Code on MacOS and Windows: g++-15 -fopenmp -std=c++14 rayTrace_vec3.cpp -o ray</small>
+            <br>
+            <small> How to compile and run on Visual Studio 2022: 
+                <ol>
+                    <li>make sure configuration is on active (release) </li>
+                    <li>Project Properties > Configuration Properties > C/C++ > Change Open MP Support to <strong>Yes (/openmp)</strong></li>
+                    <li>Configuration Properties > Debugging > Include .txt file names in <strong>Command Arguments</strong></li>
+                </ol>
+            </small>
+            <div class="image-row">
+                <div class="image-container">
+                    <small>speed up for spheres2.txt</small>
+                    <img src="images/png/parallel_2.png">
+                </div>
+                <div class="image-container">
+                    <small> speed up for arm-top.txt, cut from 14ish minutes to 5 minutes</small>
+                    <img src="images/png/parallel_1.png">
+                </div>
+                <div class="image-container">
+                    <small> speed up for arm-reach.txt, cut from 10+ minutes to 54 seconds </small>
+                    <img src="images/png/parallel_4.png">
+                </div>
+                <div class="image-container">
+                    <small> speed up for dragon.txt, cut from hours (maybe even days) to 10 minutes </small>
+                    <small> (did not include serial rendering due to <strong>VERY</strong> large file size)</small>
+                    <img src="images/png/parallel_3.png">
+                </div>
             </div>
         </div>
     </main> 
@@ -206,17 +232,25 @@
     <h2>difficulties we encountered</h2>
     <p id="difficulties"> 
         One of the strengths of our project was that many core features were already implemented from the previous iteration. For example, we had reflection, recursion to a bounded depth and shadow rendering. During this phase, we focused on fixing our refraction. 
-        After attending office hours, we realized we were using the Beer–Lambert law and Schlick’s approximation incorrectly, which caused the refracted surfaces to appear wrong. Once we got rid of that portion of the code, the refractions looked much more realistic. We also 
-        discovered that our reflection contribution wasn’t being multiplied by the specular component of the material, which affected highlights. Fixing that improved the overall lighting. For the remaining base requirements, we added directional lighting and triangle rendering. 
+        After attending office hours, we realized we were using the Beer-Lambert law and Schlick's approximation incorrectly, which caused the refracted surfaces to appear wrong. Once we got rid of that portion of the code, the refractions looked much more realistic. We also 
+        discovered that our reflection contribution wasn't being multiplied by the specular component of the material, which affected highlights. Fixing that improved the overall lighting. For the remaining base requirements, we added directional lighting and triangle rendering. 
         Tracy handled the directional light, which was straightforward to implement. Triangles, however, were more challenging since we needed to dynamically allocate memory and handle both regular and smooth (normal) triangles.
     </p>
-    <p>
+    <p id="difficulties">
          One of the biggest challenges was implementing barycentric 
         coordinates for triangle intersection. Thankfully, we reviewed the lecture slides, and Tracy found a helpful online guide that we were able to reference for our implementation. When we first rendered the arm-reach.txt and bottle.txt scenes, we noticed 
         that the normals were incorrect, causing the surfaces to look rigid. After fixing the normal calculations, our rendered results closely matched the expected output. Another difficulty we encountered was avoiding segmentation faults in complex scenes with many triangles. Initially, 
-        I tried dynamically allocating memory for all triangles but couldn’t get it stable. To resolve this, I defined a constant MAX_TRIANGLES and set it to 10,500, which eliminated the crashes. Then, I (Mary), implementated the spot light and parallelism for our bonus features.
+        I tried dynamically allocating memory for all triangles but couldn't get it stable. To resolve this, I defined a constant MAX_TRIANGLES and set it to 10,500, which eliminated the crashes. Then, I (Mary), implementated the spot light and parallelism for our bonus features.
     </p>
-    <a hidden>
+
+    <h2>halloween costume!!!</h2>
+    <p>i (tracy) dressed up as rapunzel and flynn rider with my boyfriend :3</p>
+    <div class="image-row">
+        <div class="image-container">
+            <img src="images/png/halloween.png">
+        </div>
+    </div>
+    <a href="lol">
         link to download project files
     </a>
 </body>
