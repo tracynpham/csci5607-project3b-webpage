@@ -94,8 +94,7 @@ bool pointInNormalTriangle(vec3 p, vec3 a, vec3 b, vec3 c, float &alpha, float &
   beta = (d00 * d21 - d01 * d20) / denom;
   gamma = 1.0f - alpha - beta;
 
-  // return (alpha >= 0.0f) && (beta >= 0.0f) && (gamma >= 0.0f);
-  return (alpha >= -EPSILON) && (beta >= -EPSILON) && (gamma >= -EPSILON);
+  return (alpha >= 0.0f) && (beta >= 0.0f) && (gamma >= 0.0f);
 }
 
 void TriangleIntersection(vec3 start, vec3 dir, HitInformation& hitInfo, float& closest_dist) {
@@ -143,9 +142,9 @@ void TriangleIntersection(vec3 start, vec3 dir, HitInformation& hitInfo, float& 
       vec3 edge2 = triangles[tri].edge2;
       N = triangles[tri].N;
       //ray plane intersection formula
-      if (fabs(dot(dir, N)) < 0.001f) { //checks if ray is parallel to plane 
-        continue;
-      }
+      //if (fabs(dot(dir, N)) < 0.001f) { //checks if ray is parallel to plane 
+      //  continue;
+      //}
       float d = -dot(c0, N);
       float t = -(dot(start, N) + d) / dot(dir, N);
       if (t < 0) { //intersection is behind the camera
