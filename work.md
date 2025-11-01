@@ -2,6 +2,7 @@ Work done by Tracy Pham:
 * Parsing for new commands
 * Code for intersection/point in triangle for normal triangles
 * Directional lighting
+* Webpage and design layout
 
 Work done by Mary Duong:
 * Updated arrays that held material values to structs

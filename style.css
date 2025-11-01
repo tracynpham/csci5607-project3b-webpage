@@ -28,7 +28,7 @@ img{
     flex-wrap: wrap;
 }
 
-.sphere-examples .image-row {
+.image-row {
   display: flex;            
   gap: 40px;                
   align-items: flex-start;          
@@ -37,4 +37,5 @@ img{
 .image-container {
   display: flex;
   flex-direction: column;   
+  text-align: center;
 }
