@@ -90,9 +90,9 @@ bool pointInNormalTriangle(vec3 p, vec3 a, vec3 b, vec3 c, float &alpha, float &
     return false;
   }
 
-  alpha = (d11 * d20 - d01 * d21) / denom;
-  beta = (d00 * d21 - d01 * d20) / denom;
-  gamma = 1.0f - alpha - beta;
+  beta = (d11 * d20 - d01 * d21) / denom;
+  gamma = (d00 * d21 - d01 * d20) / denom;
+  alpha = 1.0f - beta - gamma;
 
   return (alpha >= 0.0f) && (beta >= 0.0f) && (gamma >= 0.0f);
 }
@@ -140,13 +140,15 @@ void TriangleIntersection(vec3 start, vec3 dir, HitInformation& hitInfo, float& 
     else {
       vec3 edge1 = triangles[tri].edge1;
       vec3 edge2 = triangles[tri].edge2;
-      N = triangles[tri].N;
+      //N = triangles[tri].N;
+      // TEMP CHANGE
+      vec3 planeNormal = triangles[tri].N.normalized();
       //ray plane intersection formula
       //if (fabs(dot(dir, N)) < 0.001f) { //checks if ray is parallel to plane 
       //  continue;
       //}
-      float d = -dot(c0, N);
-      float t = -(dot(start, N) + d) / dot(dir, N);
+      float d = -dot(c0, planeNormal);
+      float t = -(dot(start, planeNormal) + d) / dot(dir, planeNormal);
       if (t < 0) { //intersection is behind the camera
         continue; //ignore
       }
@@ -159,18 +161,23 @@ void TriangleIntersection(vec3 start, vec3 dir, HitInformation& hitInfo, float& 
           hitInfo.hit = true;
           hitInfo.point = point;
 
-          vec3 n1 = triangles[tri].n1;
-          vec3 n2 = triangles[tri].n2;
-          vec3 n3 = triangles[tri].n3;
-          vec3 interpolatedNormal = (alpha * n1 + beta * n2 + gamma * n3);
-          if (dot(dir, interpolatedNormal) > 0) {
+          vec3 n1 = triangles[tri].n1.normalized();
+          vec3 n2 = triangles[tri].n2.normalized();
+          vec3 n3 = triangles[tri].n3.normalized();
+          vec3 interpolatedNormal = (alpha * n1 + beta * n2 + gamma * n3).normalized();
+          // if (dot(dir, interpolatedNormal) > 0) {
+          //   interpolatedNormal = interpolatedNormal * -1;
+          // }
+          //TEMP CHANGE
+          if (dot(planeNormal, interpolatedNormal) < 0){
             interpolatedNormal = interpolatedNormal * -1;
           }
-          hitInfo.normal = interpolatedNormal.normalized();
+          hitInfo.normal = interpolatedNormal;
           hitInfo.dist = t;
         }
       }
     }
+
   }
 }
 
@@ -402,7 +409,7 @@ int main(int argc, char** argv){
   Image outputImgSerial = Image(img_width,img_height);
   
   std::cout << "--------------------Performance-------------------- " << std::endl;
-  auto t_start = std::chrono::high_resolution_clock::now();
+ /* auto t_start = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < img_width; i++) {
       for (int j = 0; j < img_height; j++) {
         float u = (halfW - (imgW) * ((i + 0.5f) / imgW));
@@ -416,7 +423,7 @@ int main(int argc, char** argv){
   auto t_end = std::chrono::high_resolution_clock::now();
   double serial_duration = std::chrono::duration<double>(t_end - t_start).count();
   printf("Serial Rendering took %.2f s\n", serial_duration);
-  outputImgSerial.write(imgName.c_str());
+  outputImgSerial.write(imgName.c_str());*/
 
   //parallel render using OpenMP
   Image outputImgParallel = Image(img_width,img_height);
@@ -437,8 +444,8 @@ int main(int argc, char** argv){
   printf("Parallel Rendering took %.2f s\n", parallel_duration);
   outputImgParallel.write(imgName.c_str());
 
-  double speedup = serial_duration / parallel_duration;
-  std::cout << "Speedup: " << speedup << std::endl;
+  //double speedup = serial_duration / parallel_duration;
+  //std::cout << "Speedup: " << speedup << std::endl;
   std::cout << "----------End of Performance Analysis---------- " << std::endl;
 
   // check if vertices and/or normals exist

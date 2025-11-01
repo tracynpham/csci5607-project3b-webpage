@@ -374,6 +374,13 @@ void parseSceneFile(std::string fileName){
         triangles[tri_count].n1 = *normals[n1];
         triangles[tri_count].n2 = *normals[n2];
         triangles[tri_count].n3 = *normals[n3];
+        triangles[tri_count].edge1 = triangles[tri_count].v2 - triangles[tri_count].v1;
+        triangles[tri_count].edge2 = triangles[tri_count].v3 - triangles[tri_count].v1;
+        triangles[tri_count].N = cross(triangles[tri_count].edge1, triangles[tri_count].edge2).normalized();
+        // TEMP CHANGE
+        if (dot(triangles[tri_count].N, triangles[tri_count].n1 + triangles[tri_count].n2 + triangles[tri_count].n3) < 0){
+          triangles[tri_count].N = triangles[tri_count].N * -1;
+        }
         triangles[tri_count].smooth = true;
         tri_count++;
         printf("Normal triangle vertex and normal numbers: %d %d %d %d %d %d\n", v1, v2, v3, n1, n2, n3);
@@ -391,7 +398,7 @@ void parseSceneFile(std::string fileName){
   printf("forward: %f,%f,%f\n",forward.x,forward.y,forward.z);
   printf("right: %f,%f,%f\n",right.x,right.y,right.z);
   printf("up: %f,%f,%f\n",up.x,up.y,up.z);
-
+  
   fclose(myFile);
 }
 

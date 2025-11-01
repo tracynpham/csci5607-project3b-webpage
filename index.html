@@ -15,12 +15,12 @@
         <div class="images">
             <div class="image-row">
                 <div class="image-container">
-                    <h4>spheres1.txt</h4>
-                    <img src="images/png/spheres1.png" alt="sphere 1"/>
-                </div>
-                <div class="image-container">
                     <h4>spheres2.txt</h4>
                     <img src="images/png/spheres2.png" alt="sphere 2"/>
+                </div>
+                <div class="image-container">
+                    <h4>bear.txt</h4>
+                    <img src="images/png/bear.png" alt="bear">
                 </div>
                 <div class="image-container">
                     <h4>outdoor.txt</h4>
@@ -29,6 +29,22 @@
                 <div class="image-container">
                     <h4>test_reasonable.txt</h4>
                     <img src="images/png/foo.png" alt="foo"/>
+                </div>
+                <div class="image-container">
+                    <h4>bottle.txt</h4>
+                    <img src="images/png/bottle.png" alt="bottle">
+                </div>
+                <div class="image-container">
+                    <h4>arm-reach.txt</h4>
+                    <img src="images/png/reachingHand.png" alt="arm-reach">
+                </div>
+                <div class="image-container">
+                    <h4>arm-top.txt</h4>
+                    <img src="images/png/arm.png" alt="arm-top">
+                </div>
+                <div class="image-container">
+                    <h4>dragon.txt</h4>
+                    <img src="images/png/dragon.png" alt="Dragon">
                 </div>
             </div>
         </div>
@@ -124,37 +140,62 @@
             </div>
         </div>
 
+        <!-- feature 4 -->
         <div>
             <p>
-                5. lighting (ambient only, point light added in second photo)
+                4. lighting
             </p>
-            <div class="images">
-                <img src="images/png/ambient.png" alt="ambient">
-                <img src="images/png/point_light.png" alt="point_light">
+            <div class="image-row">
+                <div class="image-container">
+                    <small>ambient lighting only</small>
+                    <img src="images/png/light_a.png">
+                </div>
+                <div class="image-container">
+                    <small>point lighting only</small>
+                    <img src="images/png/light_p.png">
+                </div>
+                <div class="image-container">
+                    <small>directional lighting only</small>
+                    <img src="images/png/light_d.png">
+                </div>
+                <div class="image-container">
+                    <small>mix of all 3</small>
+                    <img src="images/png/light_m.png">
+                </div>
             </div>
         </div>
 
+        <!-- feature 5 -->
         <div>
             <p>
-                6. spheres (multiple spheres in scene)
+                5. spheres (multiple spheres in scene)
             </p>
             <img src="images/png/sphere.png" alt="multi sphere">
         </div>
         
+        <!-- feature 6 -->
+        <h5>other basic features displayed in scenes</h5>
+        <ul>
+            <li>triangles (both with and without vertex normals)</li>
+            <li>shadows</li>
+            <li>reflections and refractions</li>
+            <li>recursion to a bounded depth</li>
+        </ul>
+        <h2>additional features implemented</h2>
         <div>
             <p>
-                7. color and specularity (phong lighting model)
+              1. spot light (5 points)
             </p>
-            <img src="images/png/shiny_spheres.png" alt="2 shiny spheres">
+            <div class="image-container">
+                <small>example from spot_sphere.txt</small>
+                <img src="images/png/raytraced.png">
+            </div>
         </div>
-        <h2>additional features we (attempted to) implemented</h2>
-        <ul>
-            <li>PNG output</li>
-            <li>Shadows</li>
-            <li>Multiple Light Sources</li>
-            <li>Refraction</li>
-            <li>Reflection</li>
-        </ul>
+        <div>
+            <p>
+                2. parallelism
+            </p>
+        </div>
     </main> 
 
     <h2>difficulties we encountered</h2>

@@ -31,7 +31,8 @@ img{
 .image-row {
   display: flex;            
   gap: 40px;                
-  align-items: flex-start;          
+  align-items: flex-start;   
+  flex-wrap: wrap;       
 }
 
 .image-container {
