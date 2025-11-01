@@ -114,8 +114,7 @@ void TriangleIntersection(vec3 start, vec3 dir, HitInformation& hitInfo, float& 
       N = triangles[tri].N;
       //ray plane intersection formula
       if (fabs(dot(dir, N)) < 0.001f) { //checks if ray is parallel to plane // TEMP CHANGE
-        //hitInfo.hit = false;
-          continue;
+        continue;
       }
       float d = -dot(c0, N);
       float t = -(dot(start, N) + d) / dot(dir, N);
@@ -142,9 +141,6 @@ void TriangleIntersection(vec3 start, vec3 dir, HitInformation& hitInfo, float& 
       vec3 edge2 = triangles[tri].edge2;
       N = triangles[tri].N;
       //ray plane intersection formula
-      //if (fabs(dot(dir, N)) < 0.001f) { //checks if ray is parallel to plane 
-      //  continue;
-      //}
       float d = -dot(c0, N);
       float t = -(dot(start, N) + d) / dot(dir, N);
       if (t < 0) { //intersection is behind the camera
@@ -225,7 +221,6 @@ bool refract(vec3 d, vec3 n, float r, vec3& t) {
 
 Color ApplyLightingModel(vec3 start, vec3 dir, HitInformation& hitInfo, int depth) {
   vec3 contribution = vec3(0, 0, 0);
-  //int mat_index = spheres[hitInfo.sphere_num].sphere_material_index;
   int mat_index;
   if (hitInfo.tri_num >= 0)
     mat_index = triangles[hitInfo.tri_num].tri_material_index;
@@ -304,6 +299,7 @@ Color ApplyLightingModel(vec3 start, vec3 dir, HitInformation& hitInfo, int dept
     // add this light's contribution to the running total
     contribution = contribution + totalLight;
   }
+  //SPOT LIGHT
   for (int i = 0; i < spot_count; i++) {
     vec3 spotColor = spotLights[i].color; 
     vec3 spotPos = spotLights[i].pos;      
@@ -318,15 +314,16 @@ Color ApplyLightingModel(vec3 start, vec3 dir, HitInformation& hitInfo, int dept
 
     float spotIntensity = 1.0f / distToLightSqr;
     if (spotAngle > ang1) {
-      spotIntensity *= 1.0f;
+      spotIntensity *= 1.0f; //acts light point light
     }
-    else if (spotAngle > ang2) {
+    else if (spotAngle > ang2) { //between both angles for smooth fall off
       float falloffRange = ang1 - ang2;
       spotIntensity *= (spotAngle - ang2) / falloffRange;
     }
-    else {
-      spotIntensity = 0.0f;
+    else { 
+      spotIntensity = 0.0f; //no contribution
     }
+    //dealing with shadows
     HitInformation shadowHit;
     vec3 shadowOrigin = hitInfo.point + hitInfo.normal * 0.001f;
     bool blocked = FindIntersection(shadowOrigin, LNorm, shadowHit);
